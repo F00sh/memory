@@ -6,22 +6,22 @@
     <title>Memory Match – 6x4</title>
     <style>
       :root {
-        --bg: #0f1220;
-        --panel: #171a2b;
-        --accent: #6ee7ff;
-        --accent-2: #a78bfa;
-        --text: #e6e8f2;
-        --muted: #9aa1b2;
-        --danger: #ff6b6b;
-        --success: #22c55e;
-        --card: #1f2440;
+        --bg: #f7f7fb;
+        --panel: #ffffff;
+        --accent: #a7c7ff;   /* pastel blue */
+        --accent-2: #f9a8d4; /* pastel pink */
+        --text: #1f2937;     /* slate-800 */
+        --muted: #6b7280;    /* slate-500 */
+        --danger: #ef4444;
+        --success: #34d399;  /* emerald-400 */
+        --card: #eef2ff;     /* indigo-50 */
         --cell: 80px; /* default card size; JS adjusts to fit */
       }
 
       html, body {
         margin: 0;
         height: 100%;
-        background: radial-gradient(1200px 800px at 20% -10%, #0e1224, #070914 60%) fixed;
+        background: radial-gradient(1200px 800px at 20% -10%, #f9fafb, #eef2ff 60%) fixed;
         color: var(--text);
         font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
         overflow-x: hidden;
@@ -69,26 +69,26 @@
       }
 
       button {
-        background: linear-gradient(180deg, #2a3057, #1e2343);
-        color: var(--text);
-        border: 1px solid #30365e;
+        background: linear-gradient(180deg, #e0e7ff, #fde2f3);
+        color: #374151;
+        border: 1px solid #e5e7eb;
         padding: 10px 14px;
         border-radius: 10px;
         font-weight: 600;
         letter-spacing: 0.2px;
         cursor: pointer;
         transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.25), inset 0 0 0 0 rgba(255,255,255,0.08);
+        box-shadow: 0 6px 16px rgba(16,24,40,0.06), inset 0 0 0 0 rgba(255,255,255,0.08);
       }
 
-      button:hover { transform: translateY(-1px); border-color: #45508b; }
+      button:hover { transform: translateY(-1px); border-color: #c7d2fe; }
       button:active { transform: translateY(0); }
 
       /* Help button ready state */
       button.ready {
-        background: linear-gradient(180deg, #1f8a46, #166534);
-        border-color: #2bb46a;
-        box-shadow: 0 8px 24px rgba(34,197,94,0.25), inset 0 0 0 0 rgba(255,255,255,0.08);
+        background: linear-gradient(180deg, #bbf7d0, #a7f3d0);
+        border-color: #86efac;
+        box-shadow: 0 8px 20px rgba(16,185,129,0.18), inset 0 0 0 0 rgba(255,255,255,0.08);
       }
 
       .stats {
@@ -96,8 +96,8 @@
         gap: 14px;
         color: var(--muted);
         font-weight: 600;
-        background: linear-gradient(180deg, #171a2b, #13172a);
-        border: 1px solid #242a4b;
+        background: linear-gradient(180deg, #ffffff, #f3f4f6);
+        border: 1px solid #e5e7eb;
         padding: 10px 12px;
         border-radius: 10px;
       }
@@ -112,10 +112,10 @@
         grid-auto-rows: var(--cell);
         gap: 12px;
         padding: 12px;
-        background: linear-gradient(180deg, #161a2c, #13172a);
-        border: 1px solid #242a4b;
+        background: linear-gradient(180deg, #ffffff, #f3f4f6);
+        border: 1px solid #e5e7eb;
         border-radius: 16px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 -10px 40px rgba(255,255,255,0.02);
+        box-shadow: 0 10px 30px rgba(16,24,40,0.08), inset 0 -6px 20px rgba(255,255,255,0.4);
         height: 100%;
         justify-content: center;
       }
@@ -138,10 +138,10 @@
         border-radius: 12px;
         transform-style: preserve-3d;
         transition: transform 420ms cubic-bezier(.2,.8,.2,1), box-shadow 200ms ease;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+        box-shadow: 0 8px 20px rgba(16,24,40,0.10);
       }
 
-      .card:focus-visible .inner { box-shadow: 0 0 0 3px rgba(110,231,255,0.45); }
+      .card:focus-visible .inner { box-shadow: 0 0 0 3px rgba(99,102,241,0.35); }
 
       .face {
         position: absolute;
@@ -153,17 +153,17 @@
       }
 
       .front {
-        background: linear-gradient(180deg, #242a4b, #1e2442);
-        border: 1px solid #323a69;
-        color: #8ea3ff;
+        background: linear-gradient(180deg, #fef3c7, #e0e7ff);
+        border: 1px solid #e5e7eb;
+        color: #6b7280;
         font-weight: 800;
         letter-spacing: 1px;
       }
 
       .back {
         transform: rotateY(180deg);
-        background: linear-gradient(180deg, #0f1326, #0b0e1c);
-        border: 1px solid #2a315a;
+        background: linear-gradient(180deg, #ffffff, #e0e7ff);
+        border: 1px solid #e5e7eb;
         font-size: clamp(28px, calc(var(--cell) * 0.62), 72px);
       }
 
@@ -178,7 +178,7 @@
 
       /* Joker hint visuals */
       .card.hint .inner {
-        box-shadow: 0 0 0 3px rgba(110,231,255,0.6), 0 0 24px rgba(110,231,255,0.25);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.35), 0 0 20px rgba(99,102,241,0.15);
       }
       .card.hint .front,
       .card.hint .back { filter: brightness(1.35); }
@@ -190,7 +190,7 @@
         inset: 0;
         display: grid;
         place-items: center;
-        background: rgba(10, 12, 22, 0.72);
+        background: rgba(247, 247, 251, 0.72);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         opacity: 0;
@@ -200,13 +200,13 @@
       .overlay.show { opacity: 1; pointer-events: all; }
 
       .modal {
-        background: linear-gradient(180deg, #171a2b, #111427);
-        border: 1px solid #2a315a;
+        background: linear-gradient(180deg, #ffffff, #f3f4f6);
+        border: 1px solid #e5e7eb;
         color: var(--text);
         padding: 20px 18px;
         border-radius: 14px;
         width: min(440px, 92vw);
-        box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+        box-shadow: 0 30px 80px rgba(16,24,40,0.18);
       }
 
       .modal h2 { margin: 0 0 8px; }
@@ -389,8 +389,11 @@
         jokerBtn.addEventListener('click', useJoker);
         diffButtons.forEach(btn => btn.addEventListener('click', () => startWith(btn.dataset.diff)));
 
-        // Ensure only one heart is shown per chance
+        // Ensure only one heart is shown per chance and correct glyph
         heartEls.forEach(el => { el.textContent = ''; });
+        const heartStyle = document.createElement('style');
+        heartStyle.textContent = ".hearts .heart::before{content:'\\2665' !important;}";
+        document.head.appendChild(heartStyle);
 
         // Responsive sizing: make cards square and fit height
         function getNumber(val) { const n = parseFloat(val); return Number.isFinite(n) ? n : 0; }
