@@ -23,6 +23,7 @@
         background: radial-gradient(1200px 800px at 20% -10%, #0e1224, #070914 60%) fixed;
         color: var(--text);
         font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        overflow-x: hidden;
       }
 
       .container {
@@ -63,6 +64,7 @@
         display: flex;
         gap: 10px;
         align-items: center;
+        flex-wrap: wrap;
       }
 
       button {
@@ -225,6 +227,16 @@
       @media (max-width: 720px) {
         .grid { gap: 10px; padding: 10px; }
         .stats { font-size: 0.95rem; }
+        .header { flex-wrap: wrap; }
+        .controls { justify-content: space-between; }
+        .stats { flex: 1 1 100%; justify-content: space-between; }
+      }
+
+      @media (max-width: 420px) {
+        .container { padding: 16px 10px 28px; }
+        .grid { gap: 8px; padding: 8px; }
+        button { padding: 10px 12px; }
+        .stats { font-size: 0.85rem; }
       }
 
       /* Portrait: switch to 4 columns (4x6) */
@@ -235,6 +247,7 @@
       /* Hearts for lives */
       .hearts { display: inline-flex; gap: 6px; margin-left: 10px; }
       .heart { color: #ef4444; filter: drop-shadow(0 2px 6px rgba(239,68,68,.25)); }
+      .heart::before { content: '♥'; }
       .heart.lost { color: #000; filter: none; opacity: 0.9; }
     </style>
   </head>
