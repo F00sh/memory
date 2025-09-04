@@ -15,6 +15,7 @@
         --danger: #ff6b6b;
         --success: #22c55e;
         --card: #1f2440;
+        --cell: 80px; /* default card size; JS adjusts to fit */
       }
 
       html, body {
@@ -107,13 +108,16 @@
         user-select: none;
         -webkit-tap-highlight-color: transparent;
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(6, var(--cell));
+        grid-auto-rows: var(--cell);
         gap: 12px;
         padding: 12px;
         background: linear-gradient(180deg, #161a2c, #13172a);
         border: 1px solid #242a4b;
         border-radius: 16px;
         box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 -10px 40px rgba(255,255,255,0.02);
+        height: 100%;
+        justify-content: center;
       }
 
       .card {
@@ -121,8 +125,8 @@
         perspective: 900px;
         border-radius: 12px;
         overflow: hidden;
-        height: 0;
-        padding-bottom: 125%; /* aspect-ratio 4:5 fallback */
+        width: var(--cell);
+        height: var(--cell);
         background: transparent;
         cursor: pointer;
         outline: none;
@@ -160,7 +164,7 @@
         transform: rotateY(180deg);
         background: linear-gradient(180deg, #0f1326, #0b0e1c);
         border: 1px solid #2a315a;
-        font-size: clamp(28px, 5.4vw, 44px);
+        font-size: clamp(28px, calc(var(--cell) * 0.62), 72px);
       }
 
       .card.flipped .inner { transform: rotateY(180deg); }
@@ -241,7 +245,7 @@
 
       /* Portrait: switch to 4 columns (4x6) */
       @media (orientation: portrait) {
-        .grid { grid-template-columns: repeat(4, 1fr); }
+        .grid { grid-template-columns: repeat(4, var(--cell)); }
       }
 
       /* Hearts for lives */
@@ -249,6 +253,9 @@
       .heart { color: #ef4444; filter: drop-shadow(0 2px 6px rgba(239,68,68,.25)); }
       .heart::before { content: '♥'; }
       .heart.lost { color: #000; filter: none; opacity: 0.9; }
+
+      /* Ensure proper heart display and avoid duplicates */
+      .heart::before { content: '♥' !important; }
     </style>
   </head>
   <body>
@@ -324,6 +331,9 @@
         const playAgainBtn = document.getElementById('playAgainBtn');
         const jokerBtn = document.getElementById('jokerBtn');
         const heartEls = Array.from(document.querySelectorAll('.heart'));
+        const containerEl = document.querySelector('.container');
+        const headerEl = document.querySelector('.header');
+        const footerEl = document.querySelector('.footer');
 
         restartBtn.addEventListener('click', restartGame);
         playAgainBtn.addEventListener('click', restartGame);
@@ -331,6 +341,43 @@
           if (e.target === overlay) restartGame();
         });
         jokerBtn.addEventListener('click', useJoker);
+
+        // Ensure only one heart is shown per chance
+        heartEls.forEach(el => { el.textContent = ''; });
+
+        // Responsive sizing: make cards square and fit height
+        function getNumber(val) { const n = parseFloat(val); return Number.isFinite(n) ? n : 0; }
+        function isPortrait() { return window.matchMedia('(orientation: portrait)').matches; }
+        function computeCols() { return isPortrait() ? 4 : 6; }
+        function resizeGrid() {
+          const stylesGrid = getComputedStyle(grid);
+          const stylesCont = getComputedStyle(containerEl);
+
+          const colGap = getNumber(stylesGrid.columnGap || stylesGrid.gap);
+          const rowGap = getNumber(stylesGrid.rowGap || stylesGrid.gap);
+          const gpL = getNumber(stylesGrid.paddingLeft);
+          const gpR = getNumber(stylesGrid.paddingRight);
+          const gbT = getNumber(stylesGrid.borderTopWidth);
+          const gbB = getNumber(stylesGrid.borderBottomWidth);
+          const cpT = getNumber(stylesCont.paddingTop);
+          const cpB = getNumber(stylesCont.paddingBottom);
+
+          const cols = computeCols();
+          const rows = (TOTAL_PAIRS * 2) / cols;
+
+          const availW = Math.max(0, containerEl.clientWidth - gpL - gpR);
+          const verticalChrome = headerEl.offsetHeight + footerEl.offsetHeight + cpT + cpB;
+          const availH = Math.max(0, window.innerHeight - verticalChrome - (gbT + gbB) - 2);
+
+          const maxCellW = Math.floor((availW - colGap * (cols - 1)) / cols);
+          const maxCellH = Math.floor((availH - rowGap * (rows - 1)) / rows);
+          const cell = Math.max(36, Math.min(maxCellW, maxCellH));
+
+          grid.style.setProperty('--cell', cell + 'px');
+        }
+
+        window.addEventListener('resize', resizeGrid);
+        window.addEventListener('orientationchange', resizeGrid);
 
         // Simple WebAudio tones for feedback
         let audioCtx = null;
@@ -626,10 +673,13 @@
           const deck = buildDeck();
           grid.innerHTML = '';
           deck.forEach(face => grid.appendChild(createCard(face)));
+          // After building, size the grid to fit
+          resizeGrid();
         }
 
         // init
         restartGame();
+        resizeGrid();
       })();
     </script>
   </body>
