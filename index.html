@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Memory Match – 6x4</title>
+    <style>
+      :root {
+        --bg: #0f1220;
+        --panel: #171a2b;
+        --accent: #6ee7ff;
+        --accent-2: #a78bfa;
+        --text: #e6e8f2;
+        --muted: #9aa1b2;
+        --danger: #ff6b6b;
+        --success: #22c55e;
+        --card: #1f2440;
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: radial-gradient(1200px 800px at 20% -10%, #0e1224, #070914 60%) fixed;
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+
+      .container {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        min-height: 100dvh;
+        gap: 18px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .title {
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+
+      .title span.badge {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      button {
+        background: linear-gradient(180deg, #2a3057, #1e2343);
+        color: var(--text);
+        border: 1px solid #30365e;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25), inset 0 0 0 0 rgba(255,255,255,0.08);
+      }
+
+      button:hover { transform: translateY(-1px); border-color: #45508b; }
+      button:active { transform: translateY(0); }
+
+      /* Help button ready state */
+      button.ready {
+        background: linear-gradient(180deg, #1f8a46, #166534);
+        border-color: #2bb46a;
+        box-shadow: 0 8px 24px rgba(34,197,94,0.25), inset 0 0 0 0 rgba(255,255,255,0.08);
+      }
+
+      .stats {
+        display: flex;
+        gap: 14px;
+        color: var(--muted);
+        font-weight: 600;
+        background: linear-gradient(180deg, #171a2b, #13172a);
+        border: 1px solid #242a4b;
+        padding: 10px 12px;
+        border-radius: 10px;
+      }
+
+      .stats b { color: var(--text); }
+
+      .grid {
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+        padding: 12px;
+        background: linear-gradient(180deg, #161a2c, #13172a);
+        border: 1px solid #242a4b;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 -10px 40px rgba(255,255,255,0.02);
+      }
+
+      .card {
+        position: relative;
+        perspective: 900px;
+        border-radius: 12px;
+        overflow: hidden;
+        height: 0;
+        padding-bottom: 125%; /* aspect-ratio 4:5 fallback */
+        background: transparent;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .card .inner {
+        position: absolute;
+        inset: 0;
+        border-radius: 12px;
+        transform-style: preserve-3d;
+        transition: transform 420ms cubic-bezier(.2,.8,.2,1), box-shadow 200ms ease;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+      }
+
+      .card:focus-visible .inner { box-shadow: 0 0 0 3px rgba(110,231,255,0.45); }
+
+      .face {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        backface-visibility: hidden;
+      }
+
+      .front {
+        background: linear-gradient(180deg, #242a4b, #1e2442);
+        border: 1px solid #323a69;
+        color: #8ea3ff;
+        font-weight: 800;
+        letter-spacing: 1px;
+      }
+
+      .back {
+        transform: rotateY(180deg);
+        background: linear-gradient(180deg, #0f1326, #0b0e1c);
+        border: 1px solid #2a315a;
+        font-size: clamp(28px, 5.4vw, 44px);
+      }
+
+      .card.flipped .inner { transform: rotateY(180deg); }
+
+      .card.matched { pointer-events: none; }
+      .card.matched .inner { animation: vanish 420ms ease forwards; }
+      @keyframes vanish {
+        0%   { opacity: 1; transform: rotateY(180deg) scale(1); }
+        100% { opacity: 0; transform: rotateY(180deg) scale(0.6); }
+      }
+
+      /* Joker hint visuals */
+      .card.hint .inner {
+        box-shadow: 0 0 0 3px rgba(110,231,255,0.6), 0 0 24px rgba(110,231,255,0.25);
+      }
+      .card.hint .front,
+      .card.hint .back { filter: brightness(1.35); }
+
+      .footer { color: var(--muted); text-align: center; font-size: 0.9rem; }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(10, 12, 22, 0.72);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
+      }
+      .overlay.show { opacity: 1; pointer-events: all; }
+
+      .modal {
+        background: linear-gradient(180deg, #171a2b, #111427);
+        border: 1px solid #2a315a;
+        color: var(--text);
+        padding: 20px 18px;
+        border-radius: 14px;
+        width: min(440px, 92vw);
+        box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+      }
+
+      .modal h2 { margin: 0 0 8px; }
+      .modal p { margin: 0 0 14px; color: var(--muted); }
+      .modal .row { display: flex; justify-content: flex-end; gap: 10px; }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid #2a315a;
+        background: #151935;
+        font-size: 0.9rem;
+      }
+
+      .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+      .pill.success .dot { background: var(--success); }
+      .pill.danger .dot { background: var(--danger); }
+
+      @media (max-width: 720px) {
+        .grid { gap: 10px; padding: 10px; }
+        .stats { font-size: 0.95rem; }
+      }
+
+      /* Portrait: switch to 4 columns (4x6) */
+      @media (orientation: portrait) {
+        .grid { grid-template-columns: repeat(4, 1fr); }
+      }
+
+      /* Hearts for lives */
+      .hearts { display: inline-flex; gap: 6px; margin-left: 10px; }
+      .heart { color: #ef4444; filter: drop-shadow(0 2px 6px rgba(239,68,68,.25)); }
+      .heart.lost { color: #000; filter: none; opacity: 0.9; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="title">
+          <div>Memory Match</div>
+          <span class="badge">6 × 4</span>
+        </div>
+        <div class="controls">
+          <div class="stats">
+            <div>Moves: <b id="moves">0</b></div>
+            <div>Mistakes: <b id="mistakes">0</b> / 5 <span class="hearts" aria-label="Lives">
+              <span class="heart" data-i="0">♥</span>
+              <span class="heart" data-i="1">♥</span>
+              <span class="heart" data-i="2">♥</span>
+              <span class="heart" data-i="3">♥</span>
+              <span class="heart" data-i="4">♥</span>
+            </span></div>
+            <div>Pairs: <b id="pairs">0</b> / 12</div>
+          </div>
+          <button id="jokerBtn" aria-label="Use help hint">Help (3)</button>
+          <button id="restartBtn" aria-label="Restart game">Restart</button>
+        </div>
+      </div>
+
+      <div id="grid" class="grid" aria-label="Memory grid" role="grid"></div>
+
+      <div class="footer">Match all 12 pairs. Five mismatches end the game.</div>
+    </div>
+
+    <div id="overlay" class="overlay" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <h2 id="modalTitle"></h2>
+        <p id="modalText"></p>
+        <div class="row">
+          <button id="playAgainBtn">Play again</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        const MAX_MISTAKES = 5;
+        const TOTAL_PAIRS = 12;
+        const MAX_JOKERS = 3;
+
+        const icons = [
+          '🐶','🐱','🦊','🐼','🐨','🐵','🐸','🐷','🦁','🐯','🐰','🦄'
+        ];
+
+        // state
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let gameOver = false;
+        let moves = 0;
+        let mistakes = 0;
+        let matchedPairs = 0;
+        let jokersLeft = MAX_JOKERS;
+        let hintCards = [];
+        let hintTimer = null;
+
+        // elements
+        const grid = document.getElementById('grid');
+        const movesEl = document.getElementById('moves');
+        const mistakesEl = document.getElementById('mistakes');
+        const pairsEl = document.getElementById('pairs');
+        const overlay = document.getElementById('overlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalText = document.getElementById('modalText');
+        const restartBtn = document.getElementById('restartBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const jokerBtn = document.getElementById('jokerBtn');
+        const heartEls = Array.from(document.querySelectorAll('.heart'));
+
+        restartBtn.addEventListener('click', restartGame);
+        playAgainBtn.addEventListener('click', restartGame);
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) restartGame();
+        });
+        jokerBtn.addEventListener('click', useJoker);
+
+        // Simple WebAudio tones for feedback
+        let audioCtx = null;
+        function ensureAudio() {
+          if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+        }
+        function tone(freq = 440, duration = 0.12, type = 'sine', gain = 0.05, when = 0) {
+          if (!audioCtx) return;
+          const t0 = audioCtx.currentTime + when;
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.value = freq;
+          g.gain.setValueAtTime(0, t0);
+          g.gain.linearRampToValueAtTime(gain, t0 + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+          osc.connect(g).connect(audioCtx.destination);
+          osc.start(t0);
+          osc.stop(t0 + duration + 0.02);
+        }
+        function play(name) {
+          ensureAudio();
+          const s = name;
+          if (s === 'flip') {
+            tone(240, 0.08, 'triangle', 0.04);
+            tone(360, 0.08, 'triangle', 0.03, 0.03);
+          } else if (s === 'match') {
+            tone(523.25, 0.1, 'sine', 0.05);
+            tone(659.25, 0.12, 'sine', 0.05, 0.08);
+          } else if (s === 'mismatch') {
+            tone(220, 0.08, 'square', 0.05);
+            tone(180, 0.12, 'square', 0.04, 0.05);
+          } else if (s === 'win') {
+            tone(523.25, 0.12, 'sine', 0.07);
+            tone(659.25, 0.12, 'sine', 0.07, 0.1);
+            tone(783.99, 0.2, 'sine', 0.07, 0.2);
+          } else if (s === 'lose') {
+            tone(392, 0.14, 'sawtooth', 0.06);
+            tone(329.63, 0.16, 'sawtooth', 0.05, 0.1);
+            tone(261.63, 0.2, 'sawtooth', 0.04, 0.2);
+          } else if (s === 'joker' || s === 'help') {
+            tone(440, 0.08, 'triangle', 0.05);
+            tone(660, 0.12, 'triangle', 0.05, 0.06);
+          }
+        }
+
+        function shuffle(array) {
+          for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+          }
+          return array;
+        }
+
+        function buildDeck() {
+          const deck = [...icons, ...icons].slice(0, TOTAL_PAIRS * 2);
+          return shuffle(deck);
+        }
+
+        function createCard(face) {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.setAttribute('role', 'gridcell');
+          card.setAttribute('tabindex', '0');
+          card.dataset.face = face;
+
+          const inner = document.createElement('div');
+          inner.className = 'inner';
+
+          const front = document.createElement('div');
+          front.className = 'face front';
+          front.textContent = '★';
+
+          const back = document.createElement('div');
+          back.className = 'face back';
+          back.textContent = face;
+
+          inner.appendChild(front);
+          inner.appendChild(back);
+          card.appendChild(inner);
+
+          // mouse/keyboard
+          card.addEventListener('click', onCardClick);
+          card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              card.click();
+            }
+          });
+
+          return card;
+        }
+
+        function onCardClick(e) {
+          if (lockBoard || gameOver) return;
+          const card = e.currentTarget;
+          if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+          // Clear hint when making a choice
+          if (hintCards.length) clearHint();
+          flip(card);
+          play('flip');
+
+          if (!firstCard) {
+            firstCard = card;
+            updateJokerUI();
+            return;
+          }
+
+          secondCard = card;
+          moves++;
+          updateHUD();
+          checkForMatch();
+          updateJokerUI();
+        }
+
+        function flip(card) {
+          card.classList.add('flipped');
+        }
+
+        function unflip(a, b) {
+          setTimeout(() => {
+            a.classList.remove('flipped');
+            b.classList.remove('flipped');
+          }, 650);
+        }
+
+        function checkForMatch() {
+          const isMatch = firstCard.dataset.face === secondCard.dataset.face;
+          if (isMatch) {
+            handleMatch();
+          } else {
+            handleMismatch();
+          }
+        }
+
+        function handleMatch() {
+          // Briefly hold the open pair so players see it
+          lockBoard = true;
+          matchedPairs++;
+          updateHUD();
+          play('match');
+
+          setTimeout(() => {
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+
+            // Clear any hint highlight on these cards
+            firstCard.classList.remove('hint');
+            secondCard.classList.remove('hint');
+
+            resetTurn();
+            lockBoard = false;
+
+            if (matchedPairs === TOTAL_PAIRS) {
+              showOverlay('win');
+            }
+          }, 600);
+        }
+
+        function handleMismatch() {
+          lockBoard = true;
+          mistakes++;
+          updateHUD();
+          play('mismatch');
+
+          // If third mistake, end the game immediately
+          if (mistakes >= MAX_MISTAKES) {
+            gameOver = true;
+            // Still unflip to tidy up visuals
+            unflip(firstCard, secondCard);
+            setTimeout(() => showOverlay('lose'), 450);
+            return;
+          }
+
+          unflip(firstCard, secondCard);
+          setTimeout(() => { resetTurn(); updateJokerUI(); }, 660);
+        }
+
+        function resetTurn() {
+          [firstCard, secondCard] = [null, null];
+          lockBoard = false;
+        }
+
+        function updateHUD() {
+          movesEl.textContent = String(moves);
+          mistakesEl.textContent = String(mistakes);
+          pairsEl.textContent = String(matchedPairs);
+          updateHearts();
+        }
+
+        function showOverlay(type) {
+          overlay.classList.add('show');
+          overlay.setAttribute('aria-hidden', 'false');
+
+          if (type === 'win') {
+            modalTitle.textContent = 'You win!';
+            modalText.innerHTML = `<span class="pill success"><span class="dot"></span> All pairs matched.</span>\n              Moves: <b>${moves}</b> · Mistakes: <b>${mistakes}</b>`;
+            play('win');
+          } else {
+            modalTitle.textContent = 'Game over';
+            modalText.innerHTML = `<span class="pill danger"><span class="dot"></span> 3 mismatches reached.</span>\n              Pairs found: <b>${matchedPairs}/${TOTAL_PAIRS}</b> · Moves: <b>${moves}</b>`;
+            modalText.innerHTML = `<span class="pill danger"><span class="dot"></span> ${MAX_MISTAKES} mismatches reached.</span>\n              Pairs found: <b>${matchedPairs}/${TOTAL_PAIRS}</b> · Moves: <b>${moves}</b>`;
+            play('lose');
+          }
+        }
+
+        function hideOverlay() {
+          overlay.classList.remove('show');
+          overlay.setAttribute('aria-hidden', 'true');
+        }
+
+        function clearHint() {
+          if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+          hintCards.forEach(c => { c.classList.remove('hint'); });
+          hintCards = [];
+        }
+
+        function canUseHelp() {
+          return jokersLeft > 0 && !gameOver && !!firstCard && !secondCard && !lockBoard && hintCards.length === 0;
+        }
+
+        function updateJokerUI() {
+          jokerBtn.textContent = `Help (${jokersLeft})`;
+          const enabled = canUseHelp();
+          jokerBtn.disabled = !enabled;
+          jokerBtn.classList.toggle('ready', enabled);
+        }
+
+        function updateHearts() {
+          // Rightmost hearts fade first
+          const reversed = heartEls.slice().reverse();
+          reversed.forEach((el, idx) => {
+            el.classList.toggle('lost', idx < mistakes);
+          });
+        }
+
+        function useJoker() {
+          // Only allowed after first selection, and before choosing second
+          if (!canUseHelp()) return;
+          clearHint();
+
+          // Find the correct matching card for the currently selected firstCard
+          const all = Array.from(document.querySelectorAll('.card'))
+            .filter(c => !c.classList.contains('matched') && c !== firstCard);
+          const correct = all.find(c => c.dataset.face === firstCard.dataset.face);
+          if (!correct) return;
+
+          // Build decoy pool (exclude the correct one)
+          const pool = all.filter(c => c !== correct);
+          // Prefer unflipped decoys if possible
+          const unflipped = pool.filter(c => !c.classList.contains('flipped'));
+          const decoyPool = unflipped.length >= 2 ? unflipped : pool;
+
+          const decoys = [];
+          while (decoys.length < 1 && decoyPool.length) {
+            const i = Math.floor(Math.random() * decoyPool.length);
+            const pick = decoyPool.splice(i, 1)[0];
+            // Avoid picking another card with the same face as the correct, just in case
+            if (pick.dataset.face === correct.dataset.face) continue;
+            decoys.push(pick);
+          }
+
+          hintCards = [correct, ...decoys];
+          // If endgame and not enough decoys available, still show what we have
+          hintCards.forEach(c => c.classList.add('hint'));
+
+          jokersLeft--;
+          updateJokerUI();
+          play('help');
+
+          hintTimer = setTimeout(clearHint, 3500);
+        }
+
+        function restartGame() {
+          hideOverlay();
+          // reset state
+          firstCard = null;
+          secondCard = null;
+          lockBoard = false;
+          gameOver = false;
+          moves = 0;
+          mistakes = 0;
+          matchedPairs = 0;
+          jokersLeft = MAX_JOKERS;
+          clearHint();
+          updateHUD();
+          updateJokerUI();
+
+          // build grid
+          const deck = buildDeck();
+          grid.innerHTML = '';
+          deck.forEach(face => grid.appendChild(createCard(face)));
+        }
+
+        // init
+        restartGame();
+      })();
+    </script>
+  </body>
+</html>
