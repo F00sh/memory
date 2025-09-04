@@ -257,13 +257,47 @@
       /* Ensure proper heart display and avoid duplicates */
       .heart::before { content: '♥' !important; }
     </style>
+    <style>
+      /* Start screen */
+      .start { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; }
+      .start-card {
+        background: linear-gradient(180deg, #171a2b, #111427);
+        border: 1px solid #2a315a;
+        color: var(--text);
+        padding: 28px 22px;
+        border-radius: 14px;
+        width: min(520px, 92vw);
+        text-align: center;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+      }
+      .start-title { font-weight: 800; font-size: clamp(22px, 5.5vw, 28px); margin-bottom: 6px; }
+      .start-sub { color: var(--muted); margin-bottom: 16px; }
+      .start-buttons { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+      .start-buttons .diff { min-width: 120px; }
+    </style>
+    <style>
+      /* Ensure proper heart display override */
+      .hearts .heart::before { content: '♥' !important; }
+    </style>
   </head>
   <body>
-    <div class="container">
+    <div id="start" class="start" aria-label="New game screen">
+      <div class="start-card">
+        <div class="start-title">Memory Match</div>
+        <div class="start-sub">Choose a difficulty</div>
+        <div class="start-buttons">
+          <button class="diff" data-diff="easy">Easy · 3×4</button>
+          <button class="diff" data-diff="normal">Normal · 4×4</button>
+          <button class="diff" data-diff="pro">Pro · 6×4</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" style="display:none">
       <div class="header">
         <div class="title">
           <div>Memory Match</div>
-          <span class="badge">6 × 4</span>
+          <span class="badge" id="sizeBadge">–</span>
         </div>
         <div class="controls">
           <div class="stats">
@@ -275,7 +309,7 @@
               <span class="heart" data-i="3">♥</span>
               <span class="heart" data-i="4">♥</span>
             </span></div>
-            <div>Pairs: <b id="pairs">0</b> / 12</div>
+            <div>Pairs: <b id="pairs">0</b> / <span id="pairsTotal">12</span></div>
           </div>
           <button id="jokerBtn" aria-label="Use help hint">Help (3)</button>
           <button id="restartBtn" aria-label="Restart game">Restart</button>
@@ -284,7 +318,7 @@
 
       <div id="grid" class="grid" aria-label="Memory grid" role="grid"></div>
 
-      <div class="footer">Match all 12 pairs. Five mismatches end the game.</div>
+      <div class="footer" id="footerText">Match all 12 pairs. Five mismatches end the game.</div>
     </div>
 
     <div id="overlay" class="overlay" aria-hidden="true">
@@ -300,7 +334,7 @@
     <script>
       (function() {
         const MAX_MISTAKES = 5;
-        const TOTAL_PAIRS = 12;
+        let TOTAL_PAIRS = 12;
         const MAX_JOKERS = 3;
 
         const icons = [
@@ -334,6 +368,18 @@
         const containerEl = document.querySelector('.container');
         const headerEl = document.querySelector('.header');
         const footerEl = document.querySelector('.footer');
+        const startEl = document.getElementById('start');
+        const sizeBadge = document.getElementById('sizeBadge');
+        const pairsTotalEl = document.getElementById('pairsTotal');
+        const footerText = document.getElementById('footerText');
+        const diffButtons = Array.from(document.querySelectorAll('.diff'));
+
+        const DIFFICULTY = {
+          easy:   { pairs: 6,  cols: { landscape: 3, portrait: 3 } },
+          normal: { pairs: 8,  cols: { landscape: 4, portrait: 4 } },
+          pro:    { pairs: 12, cols: { landscape: 6, portrait: 4 } },
+        };
+        let currentDiff = null;
 
         restartBtn.addEventListener('click', restartGame);
         playAgainBtn.addEventListener('click', restartGame);
@@ -341,6 +387,7 @@
           if (e.target === overlay) restartGame();
         });
         jokerBtn.addEventListener('click', useJoker);
+        diffButtons.forEach(btn => btn.addEventListener('click', () => startWith(btn.dataset.diff)));
 
         // Ensure only one heart is shown per chance
         heartEls.forEach(el => { el.textContent = ''; });
@@ -348,7 +395,10 @@
         // Responsive sizing: make cards square and fit height
         function getNumber(val) { const n = parseFloat(val); return Number.isFinite(n) ? n : 0; }
         function isPortrait() { return window.matchMedia('(orientation: portrait)').matches; }
-        function computeCols() { return isPortrait() ? 4 : 6; }
+        function computeCols() {
+          if (!currentDiff) return isPortrait() ? 4 : 6;
+          return isPortrait() ? currentDiff.cols.portrait : currentDiff.cols.landscape;
+        }
         function resizeGrid() {
           const stylesGrid = getComputedStyle(grid);
           const stylesCont = getComputedStyle(containerEl);
@@ -374,6 +424,8 @@
           const cell = Math.max(36, Math.min(maxCellW, maxCellH));
 
           grid.style.setProperty('--cell', cell + 'px');
+          grid.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
+          if (sizeBadge) { sizeBadge.textContent = `${cols} x ${rows}`; }
         }
 
         window.addEventListener('resize', resizeGrid);
@@ -571,6 +623,17 @@
           updateHearts();
         }
 
+        function startWith(key) {
+          currentDiff = DIFFICULTY[key] || DIFFICULTY.normal;
+          TOTAL_PAIRS = currentDiff.pairs;
+          if (pairsTotalEl) pairsTotalEl.textContent = String(TOTAL_PAIRS);
+          if (footerText) footerText.textContent = `Match all ${TOTAL_PAIRS} pairs. Five mismatches end the game.`;
+          containerEl.style.display = 'grid';
+          startEl.style.display = 'none';
+          restartGame();
+          resizeGrid();
+        }
+
         function showOverlay(type) {
           overlay.classList.add('show');
           overlay.setAttribute('aria-hidden', 'false');
@@ -677,9 +740,9 @@
           resizeGrid();
         }
 
-        // init
-        restartGame();
-        resizeGrid();
+        // init: show start screen first
+        containerEl.style.display = 'none';
+        startEl.style.display = 'grid';
       })();
     </script>
   </body>
